@@ -34,8 +34,8 @@ token = { id = "CDHIKAGJD6MIGXGPCY26ZLHV44JOKK6YU2JPNEZO3TNSXR4IOPPL7CRY" }
 
 ### Production environment configuration
 [production.network]
-rpc-url = "https://our-custom-rpc-provider.cool"
-network-passphrase = "Public Global Stellar Network ; September 2015"
+rpc-url = "https://soroban-testnet.stellar.org"
+network-passphrase = "Test SDF Network ; September 2015"
 
 [[production.accounts]]
 name = "official-team-account"
