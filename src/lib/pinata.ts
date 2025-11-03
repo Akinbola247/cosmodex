@@ -40,8 +40,8 @@ export async function uploadTokenToPinata(
 ): Promise<UploadResult> {
   try {
     // Get JWT from environment variable
-    const PINATA_JWT = import.meta.env.PUBLIC_PINATA_JWT;
-    const GATEWAY_URL = import.meta.env.PUBLIC_PINATA_GATEWAY || "gateway.pinata.cloud";
+    const PINATA_JWT = import.meta.env.PUBLIC_PINATA_JWT as string | undefined;
+    const GATEWAY_URL = (import.meta.env.PUBLIC_PINATA_GATEWAY as string | undefined) || "gateway.pinata.cloud";
     
     if (!PINATA_JWT) {
       throw new Error(
@@ -77,7 +77,7 @@ export async function uploadTokenToPinata(
       throw new Error(`Image upload failed: ${imageUploadResponse.statusText}`);
     }
 
-    const imageData = await imageUploadResponse.json();
+    const imageData = await imageUploadResponse.json() as { IpfsHash: string };
     const imageUrl = `https://${GATEWAY_URL}/ipfs/${imageData.IpfsHash}`;
 
     // 2. Create and upload metadata JSON
@@ -120,7 +120,7 @@ export async function uploadTokenToPinata(
       throw new Error(`Metadata upload failed: ${metadataResponse.statusText}`);
     }
 
-    const metadataData = await metadataResponse.json();
+    const metadataData = await metadataResponse.json() as { IpfsHash: string };
     const metadataUrl = `https://${GATEWAY_URL}/ipfs/${metadataData.IpfsHash}`;
 
     return {

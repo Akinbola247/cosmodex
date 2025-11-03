@@ -71,7 +71,7 @@ export default function Home() {
       });
       
       // get_pool is read-only, check simulation result
-      let usdcPool = usdcPoolTx.result;
+      const usdcPool = usdcPoolTx.result;
       if (usdcPool && usdcPool !== null) {
         console.log(`    Found USDC pool: ${usdcPool}`);
         return usdcPool;
@@ -83,7 +83,7 @@ export default function Home() {
         token_b: CONTRACT_ADDRESSES.USDTToken,
       });
       
-      let reversePool = reversePoolTx.result;
+      const reversePool = reversePoolTx.result;
       if (reversePool && reversePool !== null) {
         console.log(`    Found USDC pool (reverse): ${reversePool}`);
         return reversePool;
@@ -95,7 +95,7 @@ export default function Home() {
         token_b: tokenAddress,
       });
       
-      let xlmPool = xlmPoolTx.result;
+      const xlmPool = xlmPoolTx.result;
       if (xlmPool && xlmPool !== null) {
         console.log(`    Found XLM pool: ${xlmPool}`);
         return xlmPool;
@@ -107,7 +107,7 @@ export default function Home() {
         token_b: CONTRACT_ADDRESSES.NativeXLM,
       });
       
-      let xlmReversePool = xlmReversePoolTx.result;
+      const xlmReversePool = xlmReversePoolTx.result;
       if (xlmReversePool && xlmReversePool !== null) {
         console.log(`    Found XLM pool (reverse): ${xlmReversePool}`);
         return xlmReversePool;
@@ -134,11 +134,11 @@ export default function Home() {
       // Read-only function, check simulation result first
       let ipfsUrl = "";
       if (metadataTx.result) {
-        ipfsUrl = metadataTx.result as string;
+        ipfsUrl = metadataTx.result;
         console.log(`  IPFS URL from simulation: ${ipfsUrl}`);
       } else {
         const signedResult = await metadataTx.signAndSend();
-        ipfsUrl = signedResult.result as string;
+        ipfsUrl = signedResult.result;
         console.log(`  IPFS URL from signed tx: ${ipfsUrl}`);
       }
 
@@ -202,7 +202,7 @@ export default function Home() {
       
       // Check if result is available without signing (read-only function)
       if (tokensTx.result) {
-        tokenAddresses = tokensTx.result as string[];
+        tokenAddresses = tokensTx.result;
         console.log("Got tokens from simulation:", tokenAddresses);
       } else {
         // Try signing if needed
@@ -210,7 +210,7 @@ export default function Home() {
         console.log("Signed result:", signedResult);
         
         if (signedResult && typeof signedResult === "object" && "result" in signedResult) {
-          tokenAddresses = signedResult.result as string[];
+          tokenAddresses = signedResult.result;
         } else if (Array.isArray(signedResult)) {
           tokenAddresses = signedResult;
         }
@@ -248,7 +248,7 @@ export default function Home() {
 
   // Fetch tokens on mount
   useEffect(() => {
-    fetchAllTokens();
+    void fetchAllTokens();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

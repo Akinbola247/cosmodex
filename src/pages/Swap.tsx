@@ -34,14 +34,16 @@ export default function Swap() {
 
   // Fetch available tokens on mount
   useEffect(() => {
-    fetchAvailableTokens();
+    void fetchAvailableTokens();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch balances when wallet connects or tokens change
   useEffect(() => {
     if (address && availableTokens.length > 0) {
-      fetchBalances();
+      void fetchBalances();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, availableTokens.length]);
 
   // Calculate to amount when from amount or tokens change
@@ -79,11 +81,11 @@ export default function Swap() {
       let tokenAddresses: string[] = [];
 
       if (tokensTx.result) {
-        tokenAddresses = tokensTx.result as string[];
+        tokenAddresses = tokensTx.result;
       } else if (address) {
         tokenfactory.options.publicKey = address;
         const { result } = await tokensTx.signAndSend();
-        tokenAddresses = result as string[];
+        tokenAddresses = result;
       }
 
       console.log(`Fetching metadata for ${tokenAddresses.length} tokens...`);
@@ -101,8 +103,8 @@ export default function Swap() {
           ]);
 
           return {
-            symbol: (symbolTx.result as string) || "TOKEN",
-            name: (nameTx.result as string) || "Unknown",
+            symbol: (symbolTx.result) || "TOKEN",
+            name: (nameTx.result) || "Unknown",
             contractAddress: tokenAddr,
             decimals: Number(decimalsTx.result) || 18,
             balance: "0"
@@ -369,7 +371,7 @@ export default function Swap() {
   // Handle token selection
   useEffect(() => {
     if (fromToken && toToken) {
-      fetchPoolData(fromToken, toToken);
+      void fetchPoolData(fromToken, toToken);
     }
   }, [fromToken, toToken]);
 

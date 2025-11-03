@@ -36,7 +36,7 @@ export async function getCurrentLedger(): Promise<number> {
     }),
   });
 
-  const data = await response.json();
+  const data = await response.json() as { result: { sequence: number } };
   return data.result.sequence;
 }
 

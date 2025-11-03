@@ -12,6 +12,8 @@ export default tseslint.config(
   globalIgnores([
     "dist",
     "packages",
+    "target",
+    "tailwind.config.ts",
     "src/contracts/*",
     "!src/contracts/util.ts",
   ]),

@@ -79,7 +79,7 @@ export default function Minter() {
             )}
 
             <Button
-              onClick={async () => {
+              onClick={() => void (async () => {
                 if (!address || !signTransaction) {
                   setStatus({ type: "error", message: "Please connect your wallet first" });
                   return;
@@ -106,16 +106,16 @@ export default function Minter() {
                     type: "success", 
                     message: `Successfully minted ${amount} USDT to your wallet!` 
                   });
-                } catch (error: any) {
+                } catch (error) {
                   console.error("Mint error:", error);
                   setStatus({ 
                     type: "error", 
-                    message: error?.message || "Minting failed. Make sure you have XLM for fees." 
+                    message: error instanceof Error ? error.message : "Minting failed. Make sure you have XLM for fees." 
                   });
                 } finally {
                   setIsMinting(false);
                 }
-              }}
+              })()}
               className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3"
               disabled={isMinting || !address || !amount || Number(amount) <= 0}
             >

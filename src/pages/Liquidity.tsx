@@ -95,13 +95,13 @@ export default function Liquidity() {
       // Read-only function - result available from simulation
       let allPools: string[] = [];
       if (tx.result) {
-        allPools = tx.result as string[];
+        allPools = tx.result;
         console.log("Pools from simulation:", allPools);
       } else if (address) {
         // Fallback - try signing if needed
         poolfactory.options.publicKey = address;
         const signed = await tx.signAndSend();
-        allPools = signed.result as string[];
+        allPools = signed.result;
         console.log("Pools from signed tx:", allPools);
       }
 
@@ -123,11 +123,11 @@ export default function Liquidity() {
           
           // Get token addresses
           const tokenATx = await pool.get_token_a();
-          const tokenA = tokenATx.result as string;
+          const tokenA = tokenATx.result;
           console.log(`  Token A: ${tokenA}`);
           
           const tokenBTx = await pool.get_token_b();
-          const tokenB = tokenBTx.result as string;
+          const tokenB = tokenBTx.result;
           console.log(`  Token B: ${tokenB}`);
           
           // Get reserves
@@ -138,7 +138,7 @@ export default function Liquidity() {
           // Get token symbols
           token.options.contractId = tokenA;
           const symbolATx = await token.symbol();
-          let tokenASymbol = symbolATx.result as string || "TOKEN";
+          let tokenASymbol = symbolATx.result || "TOKEN";
           
           // Check if token A is XLM
           const isXlmPoolA = tokenA === CONTRACT_ADDRESSES.NativeXLM;
@@ -146,7 +146,7 @@ export default function Liquidity() {
           
           token.options.contractId = tokenB;
           const symbolBTx = await token.symbol();
-          let tokenBSymbol = symbolBTx.result as string || "TOKEN";
+          let tokenBSymbol = symbolBTx.result || "TOKEN";
           
           // Check if token B is XLM
           const isXlmPoolB = tokenB === CONTRACT_ADDRESSES.NativeXLM;
@@ -285,7 +285,7 @@ export default function Liquidity() {
       
       // Calculate position summary if wallet connected
       if (address) {
-        calculatePositionSummary(validPools);
+        void calculatePositionSummary(validPools);
       }
     } catch (error) {
       console.error("=== Error Fetching Pools ===");
@@ -342,7 +342,7 @@ export default function Liquidity() {
               pool.options.contractId = poolData.poolAddress;
               pool.options.publicKey = address;
               const feesTx = await pool.get_user_unclaimed_fees({ user: address });
-              const unclaimedFees = feesTx.result as bigint;
+              const unclaimedFees = feesTx.result;
               
               if (unclaimedFees > BigInt(0)) {
                 // Fees are typically in USDC (6 decimals)
@@ -350,11 +350,11 @@ export default function Liquidity() {
                 totalFeesValue += feesNum;
                 console.log(`  Unclaimed fees in ${poolData.tokenASymbol}/${poolData.tokenBSymbol}: $${feesNum.toFixed(2)}`);
               }
-            } catch (error) {
+            } catch {
               console.log(`  No unclaimed fees for pool ${poolData.poolAddress}`);
             }
           }
-        } catch (error) {
+        } catch {
           console.log(`  Error calculating position for pool ${poolData.poolAddress}`);
         }
       }
@@ -387,7 +387,7 @@ export default function Liquidity() {
       token.options.contractId = selectedPool.tokenA;
       
       const balanceATx = await token.balance({ id: address });
-      const balanceAResult = balanceATx.result as bigint;
+      const balanceAResult = balanceATx.result;
       
       // Format based on decimals (assume 18 for custom tokens, 6 for USDC, 7 for XLM)
       let decimalsA = 18;
@@ -404,7 +404,7 @@ export default function Liquidity() {
       // Fetch token B balance
       token.options.contractId = selectedPool.tokenB;
       const balanceBTx = await token.balance({ id: address });
-      const balanceBResult = balanceBTx.result as bigint;
+      const balanceBResult = balanceBTx.result;
       
       let decimalsB = 18;
       if (selectedPool.tokenBSymbol === "USDT" || selectedPool.tokenBSymbol === "USDC") {
@@ -429,14 +429,14 @@ export default function Liquidity() {
 
   // Fetch pools on mount (doesn't require wallet for read-only)
   useEffect(() => {
-    fetchPools();
+    void fetchPools();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch balances when pool is selected or wallet connects
   useEffect(() => {
     if (selectedPool && address) {
-      fetchBalances();
+      void fetchBalances();
     } else {
       setTokenABalance("0");
       setTokenBBalance("0");
@@ -447,7 +447,7 @@ export default function Liquidity() {
   // Recalculate position summary when wallet connects
   useEffect(() => {
     if (address && pools.length > 0) {
-      calculatePositionSummary(pools);
+      void calculatePositionSummary(pools);
     } else {
       setTotalLiquidity("$0.00");
       setTotalFees("$0.00");
@@ -602,12 +602,12 @@ export default function Liquidity() {
       ));
 
       // Success! Refresh balances and pools
-      setTimeout(async () => {
+      setTimeout(() => {
         setShowLiquidityModal(false);
         setTokenAAmount("");
         setTokenBAmount("");
-        await fetchBalances();
-        await fetchPools();
+        void fetchBalances();
+        void fetchPools();
       }, 2000);
 
     } catch (error) {
@@ -622,7 +622,7 @@ export default function Liquidity() {
   };
 
   // Handle remove liquidity
-  const handleRemoveLiquidity = async () => {
+  const handleRemoveLiquidity = () => {
     if (!selectedPool || !address || !signTransaction) {
       alert("Please connect wallet and select a pool");
       return;
@@ -686,7 +686,7 @@ export default function Liquidity() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={fetchPools}
+                    onClick={() => void fetchPools()}
                     disabled={isLoadingPools}
                   >
                     <RefreshCw className={`h-4 w-4 ${isLoadingPools ? 'animate-spin' : ''}`} />
@@ -896,7 +896,7 @@ export default function Liquidity() {
                       </div>
 
                       <Button
-                        onClick={handleAddLiquidity}
+                        onClick={() => void handleAddLiquidity()}
                         disabled={isAddingLiquidity || !address}
                         className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3"
                       >
@@ -932,24 +932,28 @@ export default function Liquidity() {
                           />
                           <div className="flex justify-between text-xs text-gray-500 mt-2">
                             <button
+                              type="button"
                               onClick={() => setRemovePercentage(25)}
                               className="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700"
                             >
                               25%
                             </button>
                             <button
+                              type="button"
                               onClick={() => setRemovePercentage(50)}
                               className="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700"
                             >
                               50%
                             </button>
                             <button
+                              type="button"
                               onClick={() => setRemovePercentage(75)}
                               className="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700"
                             >
                               75%
                             </button>
                             <button
+                              type="button"
                               onClick={() => setRemovePercentage(100)}
                               className="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700"
                             >
@@ -974,7 +978,7 @@ export default function Liquidity() {
                       </div>
 
                       <Button
-                        onClick={handleRemoveLiquidity}
+                        onClick={() => void handleRemoveLiquidity()}
                         disabled={isRemovingLiquidity || !address}
                         className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3"
                       >
