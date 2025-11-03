@@ -17,7 +17,7 @@
  * ```
  */
 
-import { networkPassphrase, rpcUrl } from "../contracts/util";
+import { rpcUrl } from "../contracts/util";
 
 /**
  * Get the current ledger sequence for setting expiration

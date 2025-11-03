@@ -78,7 +78,9 @@ export function useSubscription(
                 error,
               );
             } finally {
-              paging[id].pagingToken = event.pagingToken;
+              if ('pagingToken' in event) {
+                paging[id].pagingToken = (event as any).pagingToken;
+              }
             }
           });
         }
