@@ -71,7 +71,7 @@ export default function Home() {
       });
       
       // get_pool is read-only, check simulation result
-      const usdcPool = usdcPoolTx.result;
+      const usdcPool = usdcPoolTx.result as string | null;
       if (usdcPool && usdcPool !== null) {
         console.log(`    Found USDC pool: ${usdcPool}`);
         return usdcPool;
@@ -83,7 +83,7 @@ export default function Home() {
         token_b: CONTRACT_ADDRESSES.USDTToken,
       });
       
-      const reversePool = reversePoolTx.result;
+      const reversePool = reversePoolTx.result as string | null;
       if (reversePool && reversePool !== null) {
         console.log(`    Found USDC pool (reverse): ${reversePool}`);
         return reversePool;
@@ -95,7 +95,7 @@ export default function Home() {
         token_b: tokenAddress,
       });
       
-      const xlmPool = xlmPoolTx.result;
+      const xlmPool = xlmPoolTx.result as string | null;
       if (xlmPool && xlmPool !== null) {
         console.log(`    Found XLM pool: ${xlmPool}`);
         return xlmPool;
@@ -107,7 +107,7 @@ export default function Home() {
         token_b: CONTRACT_ADDRESSES.NativeXLM,
       });
       
-      const xlmReversePool = xlmReversePoolTx.result;
+      const xlmReversePool = xlmReversePoolTx.result as string | null;
       if (xlmReversePool && xlmReversePool !== null) {
         console.log(`    Found XLM pool (reverse): ${xlmReversePool}`);
         return xlmReversePool;
@@ -134,11 +134,13 @@ export default function Home() {
       // Read-only function, check simulation result first
       let ipfsUrl = "";
       if (metadataTx.result) {
-        ipfsUrl = metadataTx.result;
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        ipfsUrl = metadataTx.result as string;
         console.log(`  IPFS URL from simulation: ${ipfsUrl}`);
       } else {
         const signedResult = await metadataTx.signAndSend();
-        ipfsUrl = signedResult.result;
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        ipfsUrl = signedResult.result as string;
         console.log(`  IPFS URL from signed tx: ${ipfsUrl}`);
       }
 
@@ -202,7 +204,8 @@ export default function Home() {
       
       // Check if result is available without signing (read-only function)
       if (tokensTx.result) {
-        tokenAddresses = tokensTx.result;
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        tokenAddresses = tokensTx.result as string[];
         console.log("Got tokens from simulation:", tokenAddresses);
       } else {
         // Try signing if needed
@@ -210,9 +213,10 @@ export default function Home() {
         console.log("Signed result:", signedResult);
         
         if (signedResult && typeof signedResult === "object" && "result" in signedResult) {
-          tokenAddresses = signedResult.result;
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+          tokenAddresses = signedResult.result as string[];
         } else if (Array.isArray(signedResult)) {
-          tokenAddresses = signedResult;
+          tokenAddresses = signedResult as string[];
         }
       }
 
