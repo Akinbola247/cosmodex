@@ -1,0 +1,34 @@
+{
+  "network": "testnet",
+  "deployed_at": "2025-11-01T18:24:00Z",
+  "deployer": "GB5EF7MG55YQYJ3PR26HHNFXJJRDAVFQFBUT6E2NYUXZM4K2N2IYJVPM",
+  "admin": "GC5QOPGD536F3M5PASQCMZUG7IGA2ARFE4KB46FAOKXZKHGOUPTMXP7W",
+  "contracts": {
+    "tokenfactory": "CAZ7KEXHZDHP6ZZXOADXNBN4XY3TPRVWJSHU3UDXIN3GKJALJDAR2S6Y",
+    "poolfactory": "CCA6WZEXVK2AFI2BIG5PSJODNL2U6727KHISBDGEXV2FTGPW4DPGNZH3",
+    "usdt_token": "CDHIKAGJD6MIGXGPCY26ZLHV44JOKK6YU2JPNEZO3TNSXR4IOPPL7CRY",
+    "tokenlaunch_sample": "CAXEF6EPKTV6SX4QOO45DZIJBSXUN7G6HT5KVUVQDA6YZE772ZER6N4C",
+    "pool_sample": "CDLPZ7IUJ7DRU3P3FQEDYSYAG6DSD77QJT4ENHZTRPB26ABTUSEVXVHP"
+  },
+  "wasm_hashes": {
+    "tokenfactory": "8425181a8ba61aae92c9b0a66d73729af0b9956de0da90c902ec9ae8196c030d",
+    "poolfactory": "3c3bc1ce18aef70439dfd412407798880832dfd4dfcc990fc5b2acba9bd6f8f1",
+    "token": "c8d31ade6045a5ab753c4dbe3d23cbbae2b81b875f5a43d64560184f754676d9",
+    "pool": "043f6412a640bd63617e4734590234209bd7560e8d20386f0ec5c8f4a1f399c7",
+    "tokenlaunch": "bf41357c58079491e6c62e43da32543eb0ab2dcdfdcd40113bab76ad87ccff55"
+  },
+  "rpc_url": "https://soroban-testnet.stellar.org",
+  "network_passphrase": "Test SDF Network ; September 2015",
+  "explorer_links": {
+    "tokenfactory": "https://stellar.expert/explorer/testnet/contract/CAZ7KEXHZDHP6ZZXOADXNBN4XY3TPRVWJSHU3UDXIN3GKJALJDAR2S6Y",
+    "poolfactory": "https://stellar.expert/explorer/testnet/contract/CCA6WZEXVK2AFI2BIG5PSJODNL2U6727KHISBDGEXV2FTGPW4DPGNZH3",
+    "usdt_token": "https://stellar.expert/explorer/testnet/contract/CDHIKAGJD6MIGXGPCY26ZLHV44JOKK6YU2JPNEZO3TNSXR4IOPPL7CRY",
+    "tokenlaunch_sample": "https://stellar.expert/explorer/testnet/contract/CAXEF6EPKTV6SX4QOO45DZIJBSXUN7G6HT5KVUVQDA6YZE772ZER6N4C",
+    "pool_sample": "https://stellar.expert/explorer/testnet/contract/CDLPZ7IUJ7DRU3P3FQEDYSYAG6DSD77QJT4ENHZTRPB26ABTUSEVXVHP"
+  },
+  "notes": {
+    "tokenlaunch_sample": "Sample token with: name='Sample Token', symbol='SAMPLE', decimals=18, supply=1M tokens",
+    "pool_sample": "Sample pool with: USDT-SAMPLE LP (USDT/Sample Token pair)"
+  }
+}
+

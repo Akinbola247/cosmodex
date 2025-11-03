@@ -1,0 +1,51 @@
+### Development environment configuration
+# Use staging (testnet) as default development environment
+[development.network]
+rpc-url = "https://soroban-testnet.stellar.org"
+network-passphrase = "Test SDF Network ; September 2015"
+
+[[development.accounts]]
+name = "testnet-deployer"
+default = true
+
+[development.contracts]
+tokenfactory = { id = "CAZ7KEXHZDHP6ZZXOADXNBN4XY3TPRVWJSHU3UDXIN3GKJALJDAR2S6Y" }
+poolfactory = { id = "CCA6WZEXVK2AFI2BIG5PSJODNL2U6727KHISBDGEXV2FTGPW4DPGNZH3" }
+token = { id = "CDHIKAGJD6MIGXGPCY26ZLHV44JOKK6YU2JPNEZO3TNSXR4IOPPL7CRY" }
+tokenlaunch = { id = "CAXEF6EPKTV6SX4QOO45DZIJBSXUN7G6HT5KVUVQDA6YZE772ZER6N4C" }
+
+
+# Note: Using testnet-deployed contracts for development
+# This avoids deploying to testnet on every restart
+
+### Staging environment configuration
+[staging.network]
+rpc-url = "https://soroban-testnet.stellar.org"
+network-passphrase = "Test SDF Network ; September 2015"
+
+[[staging.accounts]]
+name = "testnet-deployer"
+default = true
+
+[staging.contracts]
+tokenfactory = { id = "CAZ7KEXHZDHP6ZZXOADXNBN4XY3TPRVWJSHU3UDXIN3GKJALJDAR2S6Y" }
+poolfactory = { id = "CCA6WZEXVK2AFI2BIG5PSJODNL2U6727KHISBDGEXV2FTGPW4DPGNZH3" }
+token = { id = "CDHIKAGJD6MIGXGPCY26ZLHV44JOKK6YU2JPNEZO3TNSXR4IOPPL7CRY" }
+
+### Production environment configuration
+[production.network]
+rpc-url = "https://our-custom-rpc-provider.cool"
+network-passphrase = "Public Global Stellar Network ; September 2015"
+
+[[production.accounts]]
+name = "official-team-account"
+default = true
+
+[production.contracts]
+# soroban-atomic-swap-contract = { id = "C987..." }
+# soroban-auth-contract = { id = "C876..." }
+# soroban-errors-contract = { id = "C765..." }
+# soroban-hello-world-contract = { id = "C654..." }
+# soroban-increment-contract = { id = "C543..." }
+# soroban-token-contract = { id = "C432..." }
+# eurc = { id = "C321..." }
