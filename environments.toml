@@ -42,10 +42,7 @@ name = "official-team-account"
 default = true
 
 [production.contracts]
-# soroban-atomic-swap-contract = { id = "C987..." }
-# soroban-auth-contract = { id = "C876..." }
-# soroban-errors-contract = { id = "C765..." }
-# soroban-hello-world-contract = { id = "C654..." }
-# soroban-increment-contract = { id = "C543..." }
-# soroban-token-contract = { id = "C432..." }
-# eurc = { id = "C321..." }
+tokenfactory = { id = "CAZ7KEXHZDHP6ZZXOADXNBN4XY3TPRVWJSHU3UDXIN3GKJALJDAR2S6Y" }
+poolfactory = { id = "CCA6WZEXVK2AFI2BIG5PSJODNL2U6727KHISBDGEXV2FTGPW4DPGNZH3" }
+token = { id = "CDHIKAGJD6MIGXGPCY26ZLHV44JOKK6YU2JPNEZO3TNSXR4IOPPL7CRY" }
+
