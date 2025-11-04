@@ -35,9 +35,7 @@ lerna-debug.log*
 # macOS-specific files
 .DS_Store
 
-# generated contract clients (now committed for Vercel deployment)
-# Note: Contract packages are now committed to support Vercel builds
-# packages/*
+
 # if you have other workspace packages, add them here
 # !packages/.gitkeep
 

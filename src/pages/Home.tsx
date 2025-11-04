@@ -3,7 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, TrendingUp, TrendingDown, Flame, Clock, Zap, BarChart3, Loader2, RefreshCw } from "lucide-react";
+import {
+  Search,
+  Plus,
+  TrendingUp,
+  TrendingDown,
+  Flame,
+  Clock,
+  Zap,
+  BarChart3,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import { NavLink } from "react-router-dom";
 import tokenfactory from "@/contracts/tokenfactory";
 import poolfactory from "@/contracts/poolfactory";
@@ -49,11 +60,13 @@ export default function Home() {
   const [isLoadingTokens, setIsLoadingTokens] = useState(false);
 
   // Fetch token metadata from IPFS
-  const fetchMetadataFromIPFS = async (ipfsUrl: string): Promise<TokenMetadata | null> => {
+  const fetchMetadataFromIPFS = async (
+    ipfsUrl: string,
+  ): Promise<TokenMetadata | null> => {
     try {
       const response = await fetch(ipfsUrl);
       if (!response.ok) return null;
-      const metadata = await response.json() as TokenMetadata;
+      const metadata = (await response.json()) as TokenMetadata;
       return metadata;
     } catch (error) {
       console.error("Error fetching metadata:", error);
@@ -62,27 +75,27 @@ export default function Home() {
   };
 
   // Fetch pool for a token
-  const fetchPoolForToken = async (tokenAddress: string): Promise<string | null> => {
+  const fetchPoolForToken = async (
+    tokenAddress: string,
+  ): Promise<string | null> => {
     try {
       // Try USDC pool first
       const usdcPoolTx = await poolfactory.get_pool({
         token_a: CONTRACT_ADDRESSES.USDTToken,
         token_b: tokenAddress,
       });
-      
-      // get_pool is read-only, check simulation result
+
       const usdcPool = usdcPoolTx.result as string | null;
       if (usdcPool && usdcPool !== null) {
         console.log(`    Found USDC pool: ${usdcPool}`);
         return usdcPool;
       }
 
-      // Try reverse order
       const reversePoolTx = await poolfactory.get_pool({
         token_a: tokenAddress,
         token_b: CONTRACT_ADDRESSES.USDTToken,
       });
-      
+
       const reversePool = reversePoolTx.result as string | null;
       if (reversePool && reversePool !== null) {
         console.log(`    Found USDC pool (reverse): ${reversePool}`);
@@ -94,7 +107,7 @@ export default function Home() {
         token_a: CONTRACT_ADDRESSES.NativeXLM,
         token_b: tokenAddress,
       });
-      
+
       const xlmPool = xlmPoolTx.result as string | null;
       if (xlmPool && xlmPool !== null) {
         console.log(`    Found XLM pool: ${xlmPool}`);
@@ -106,7 +119,7 @@ export default function Home() {
         token_a: tokenAddress,
         token_b: CONTRACT_ADDRESSES.NativeXLM,
       });
-      
+
       const xlmReversePool = xlmReversePoolTx.result as string | null;
       if (xlmReversePool && xlmReversePool !== null) {
         console.log(`    Found XLM pool (reverse): ${xlmReversePool}`);
@@ -122,16 +135,17 @@ export default function Home() {
   };
 
   // Fetch token metadata and pool data
-  const fetchTokenData = async (tokenAddress: string): Promise<DisplayToken | null> => {
+  const fetchTokenData = async (
+    tokenAddress: string,
+  ): Promise<DisplayToken | null> => {
     try {
       console.log(`Fetching data for token: ${tokenAddress}`);
-      
+
       // Get metadata URL from tokenfactory
       const metadataTx = await tokenfactory.get_token_metadata({
         token_addr: tokenAddress,
       });
-      
-      // Read-only function, check simulation result first
+
       let ipfsUrl = "";
       if (metadataTx.result) {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
@@ -193,15 +207,15 @@ export default function Home() {
       setIsLoadingTokens(true);
 
       console.log("=== Fetching Deployed Tokens ===");
-      
+
       // Get all deployed tokens from tokenfactory
       const tokensTx = await tokenfactory.get_all_deployed_tokens();
-      
+
       console.log("Raw tokens response:", tokensTx);
-      
+
       // Handle different response formats
       let tokenAddresses: string[] = [];
-      
+
       // Check if result is available without signing (read-only function)
       if (tokensTx.result) {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
@@ -211,8 +225,12 @@ export default function Home() {
         // Try signing if needed
         const signedResult = await tokensTx.signAndSend();
         console.log("Signed result:", signedResult);
-        
-        if (signedResult && typeof signedResult === "object" && "result" in signedResult) {
+
+        if (
+          signedResult &&
+          typeof signedResult === "object" &&
+          "result" in signedResult
+        ) {
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
           tokenAddresses = signedResult.result as string[];
         } else if (Array.isArray(signedResult)) {
@@ -234,9 +252,11 @@ export default function Home() {
       const tokenPromises = tokenAddresses.map(fetchTokenData);
       const tokenResults = await Promise.all(tokenPromises);
 
-      // Filter out null results
-      const validTokens = tokenResults.filter((t: DisplayToken | null): t is DisplayToken => t !== null);
-      setTokens(validTokens);
+      // Filter out null results and reverse to show newest first
+      const validTokens = tokenResults.filter(
+        (t: DisplayToken | null): t is DisplayToken => t !== null,
+      );
+      setTokens(validTokens.reverse());
 
       console.log("=== Tokens Loaded Successfully ===");
       console.log("Valid tokens:", validTokens.length);
@@ -244,7 +264,10 @@ export default function Home() {
     } catch (error) {
       console.error("=== Error Fetching Tokens ===");
       console.error("Error:", error);
-      console.error("Error message:", error instanceof Error ? error.message : String(error));
+      console.error(
+        "Error message:",
+        error instanceof Error ? error.message : String(error),
+      );
     } finally {
       setIsLoadingTokens(false);
     }
@@ -259,7 +282,7 @@ export default function Home() {
   const filteredTokens = tokens.filter(
     (token) =>
       token.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      token.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+      token.symbol.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -271,7 +294,8 @@ export default function Home() {
             Welcome to CosmoDex
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            The ultimate platform for launching, trading, and managing tokens on Stellar
+            The ultimate platform for launching, trading, and managing tokens on
+            Stellar
           </p>
         </div>
 
@@ -280,7 +304,11 @@ export default function Home() {
           <div className="flex flex-wrap items-center gap-6 text-sm text-gray-400">
             <span className="flex items-center">
               <span className="text-green-500 font-semibold">
-                {isLoadingTokens ? <Loader2 className="h-4 w-4 animate-spin" /> : tokens.length}
+                {isLoadingTokens ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  tokens.length
+                )}
               </span>
               <span className="ml-1">Tokens</span>
             </span>
@@ -299,7 +327,9 @@ export default function Home() {
               className="text-gray-400 hover:text-blue-400 transition-colors disabled:opacity-50"
               title="Refresh tokens"
             >
-              <RefreshCw className={`h-4 w-4 ${isLoadingTokens ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${isLoadingTokens ? "animate-spin" : ""}`}
+              />
             </button>
           </div>
           <NavLink to="/launch">
@@ -366,7 +396,9 @@ export default function Home() {
             {isLoadingTokens ? (
               <div className="p-12 text-center">
                 <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-500" />
-                <p className="text-gray-400">Loading tokens from tokenfactory...</p>
+                <p className="text-gray-400">
+                  Loading tokens from tokenfactory...
+                </p>
               </div>
             ) : filteredTokens.length > 0 ? (
               filteredTokens.map((token) => (
@@ -377,12 +409,12 @@ export default function Home() {
                   {/* Token Info */}
                   <div className="col-span-4 flex items-center space-x-3">
                     {token.image ? (
-                      <img 
-                        src={token.image} 
+                      <img
+                        src={token.image}
                         alt={token.name}
                         className="w-8 h-8 rounded-full object-cover"
                         onError={(e) => {
-                          e.currentTarget.src = '/placeholder.svg';
+                          e.currentTarget.src = "/placeholder.svg";
                         }}
                       />
                     ) : (
@@ -415,7 +447,9 @@ export default function Home() {
                   <div className="col-span-2 text-right">
                     <span
                       className={`font-medium flex items-center justify-end ${
-                        token.change.startsWith("+") ? "text-green-400" : "text-red-400"
+                        token.change.startsWith("+")
+                          ? "text-green-400"
+                          : "text-red-400"
                       }`}
                     >
                       {token.change.startsWith("+") ? (
@@ -439,7 +473,11 @@ export default function Home() {
                         <BarChart3 className="h-3 w-3" />
                       </Button>
                       <NavLink to="/swap">
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-green-400">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-green-400"
+                        >
                           <Zap className="h-3 w-3" />
                         </Button>
                       </NavLink>
@@ -451,7 +489,9 @@ export default function Home() {
               <div className="p-12 text-center text-gray-400">
                 <Zap className="h-16 w-16 mx-auto mb-4 text-gray-600" />
                 <p className="text-lg font-medium">No tokens launched yet</p>
-                <p className="text-sm mt-2">Be the first to launch a token on CosmoDex!</p>
+                <p className="text-sm mt-2">
+                  Be the first to launch a token on CosmoDex!
+                </p>
                 <NavLink to="/launch">
                   <Button className="mt-4 bg-green-500 hover:bg-green-600 text-black">
                     <Plus className="mr-2 h-4 w-4" />
@@ -471,9 +511,12 @@ export default function Home() {
         {/* Call to Action */}
         <Card className="mt-8 bg-gradient-to-r from-green-500/10 to-blue-500/10 border-green-500/20">
           <div className="p-6 text-center">
-            <h2 className="text-2xl font-bold mb-2">Ready to Launch Your Token?</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              Ready to Launch Your Token?
+            </h2>
             <p className="text-gray-400 mb-4">
-              Create your own token, set up liquidity pools, and start trading in minutes
+              Create your own token, set up liquidity pools, and start trading
+              in minutes
             </p>
             <NavLink to="/launch">
               <Button className="bg-green-500 hover:bg-green-600 text-black">
