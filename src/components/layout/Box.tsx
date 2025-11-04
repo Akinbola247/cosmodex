@@ -1,6 +1,5 @@
 import React from "react";
 
-// Define gap values (you may need to adjust these based on your design system)
 const gapValues = {
   xs: "0.25rem", // 4px
   sm: "0.5rem", // 8px

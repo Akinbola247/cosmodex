@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Text, Modal, Profile } from "@stellar/design-system";
+import { Button, Modal, Profile } from "@stellar/design-system";
 import { useWallet } from "../hooks/useWallet";
 import { useWalletBalance } from "../hooks/useWalletBalance";
 import { connectWallet, disconnectWallet } from "../util/wallet";
@@ -7,7 +7,7 @@ import { connectWallet, disconnectWallet } from "../util/wallet";
 export const WalletButton = () => {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const { address, isPending } = useWallet();
-  const { xlm, ...balance } = useWalletBalance();
+  const { ...balance } = useWalletBalance();
   const buttonLabel = isPending ? "Loading..." : "Connect";
 
   if (!address) {
@@ -28,11 +28,14 @@ export const WalletButton = () => {
         opacity: balance.isLoading ? 0.6 : 1,
       }}
     >
-      <Text as="div" size="sm">
+      {/* <Text as="div" size="sm">
         Wallet Balance: {xlm} XLM
-      </Text>
+      </Text> */}
 
-      <div id="modalContainer">
+      <div
+        id="modalContainer"
+        className="bg-black h-auto w-auto p-4 rounded-md"
+      >
         <Modal
           visible={showDisconnectModal}
           onClose={() => setShowDisconnectModal(false)}

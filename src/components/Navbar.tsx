@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, Plus, ArrowUpDown, BarChart3, Droplets, User, Zap, Code } from "lucide-react";
+import {
+  Menu,
+  Plus,
+  ArrowUpDown,
+  BarChart3,
+  Droplets,
+  User,
+  Zap,
+} from "lucide-react";
 import ConnectAccount from "./ConnectAccount";
 
 export function Navbar() {
@@ -15,7 +23,7 @@ export function Navbar() {
     { href: "/portfolio", label: "Portfolio", icon: User },
     { href: "/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/minter", label: "Faucet", icon: Zap },
-    { href: "/debug", label: "Debugger", icon: Code },
+    // { href: "/debug", label: "Debugger", icon: Code },
   ];
 
   return (
@@ -129,4 +137,3 @@ export function Navbar() {
     </nav>
   );
 }
-
