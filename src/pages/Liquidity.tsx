@@ -818,24 +818,106 @@ export default function Liquidity() {
   };
 
   // Handle remove liquidity
-  const handleRemoveLiquidity = () => {
+  const handleRemoveLiquidity = async () => {
     if (!selectedPool || !address || !signTransaction) {
       alert("Please connect wallet and select a pool");
+      return;
+    }
+
+    // Validate user has LP tokens
+    if (!selectedPool.lpBalanceRaw || selectedPool.lpBalanceRaw === BigInt(0)) {
+      alert("You don't have any liquidity in this pool");
+      return;
+    }
+
+    if (removePercentage <= 0 || removePercentage > 100) {
+      alert("Please select a valid percentage (1-100%)");
       return;
     }
 
     try {
       setIsRemovingLiquidity(true);
 
-      console.log("Removing liquidity:", {
-        pool: selectedPool.poolAddress,
-        percentage: removePercentage,
+      const percentage = removePercentage / 100;
+
+      console.log("=== Starting Remove Liquidity ===");
+      console.log("Pool:", selectedPool.poolAddress);
+      console.log("LP Balance (raw):", selectedPool.lpBalanceRaw.toString());
+      console.log(
+        "Percentage to remove:",
+        `${removePercentage}% (${percentage})`,
+      );
+
+      // Calculate LP amount to burn: lpAmountToRemove = userLpBalance * percentage
+      const percentageRaw = BigInt(Math.floor(percentage * Math.pow(10, 18)));
+      const lpAmountRaw =
+        (selectedPool.lpBalanceRaw * percentageRaw) / BigInt(Math.pow(10, 18));
+
+      console.log("LP Amount to remove (raw):", lpAmountRaw.toString());
+      console.log("LP Amount (human):", Number(lpAmountRaw) / Math.pow(10, 18));
+
+      if (lpAmountRaw <= BigInt(0)) {
+        alert("Amount too small to remove");
+        return;
+      }
+
+      // Calculate expected token returns
+      const tokenADecimals =
+        selectedPool.isXlmPool && selectedPool.tokenASymbol === "XLM"
+          ? 7
+          : selectedPool.tokenASymbol === "USDT"
+            ? 6
+            : 18;
+      const tokenBDecimals =
+        selectedPool.isXlmPool && selectedPool.tokenBSymbol === "XLM"
+          ? 7
+          : selectedPool.tokenBSymbol === "USDT"
+            ? 6
+            : 18;
+
+      const expectedTokenA =
+        (Number(selectedPool.reserves[0]) * percentage) /
+        Math.pow(10, tokenADecimals);
+      const expectedTokenB =
+        (Number(selectedPool.reserves[1]) * percentage) /
+        Math.pow(10, tokenBDecimals);
+
+      console.log("Expected returns:", {
+        tokenA: `${expectedTokenA.toFixed(6)} ${selectedPool.tokenASymbol}`,
+        tokenB: `${expectedTokenB.toFixed(6)} ${selectedPool.tokenBSymbol}`,
       });
 
-      alert("Remove liquidity functionality - integrate with pool contract");
+      // Call pool.remove_liquidity
+      pool.options.contractId = selectedPool.poolAddress;
+      pool.options.publicKey = address;
+      pool.options.signTransaction = signTransaction;
+
+      const removeTx = await pool.remove_liquidity({
+        caller: address,
+        liquidity: lpAmountRaw,
+      });
+
+      console.log("Signing and sending transaction...");
+      const { result } = await removeTx.signAndSend();
+      console.log("✅ Liquidity removed successfully:", result);
+
+      // Success message
+      alert(
+        `✅ Successfully removed ${removePercentage}% of your liquidity!\n\n` +
+          `You received:\n` +
+          `• ~${expectedTokenA.toFixed(6)} ${selectedPool.tokenASymbol}\n` +
+          `• ~${expectedTokenB.toFixed(6)} ${selectedPool.tokenBSymbol}`,
+      );
+
+      // Refresh data
+      setRemovePercentage(25);
+      void fetchBalances();
+      void fetchPools();
     } catch (error) {
       console.error("Error removing liquidity:", error);
-      alert("Failed to remove liquidity");
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to remove liquidity";
+      alert(`❌ Error: ${errorMsg}`);
     } finally {
       setIsRemovingLiquidity(false);
     }
