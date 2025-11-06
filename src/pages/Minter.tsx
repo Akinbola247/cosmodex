@@ -12,7 +12,10 @@ export default function Minter() {
   const { address, signTransaction } = useWallet();
   const [amount, setAmount] = useState("1000");
   const [isMinting, setIsMinting] = useState(false);
-  const [status, setStatus] = useState<null | { type: "success" | "error"; message: string }>(null);
+  const [status, setStatus] = useState<null | {
+    type: "success" | "error";
+    message: string;
+  }>(null);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white py-8">
@@ -21,7 +24,9 @@ export default function Minter() {
           <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
             Test Token Faucet
           </h1>
-          <p className="text-gray-400 text-lg">Get test USDT tokens for the testnet</p>
+          <p className="text-gray-400 text-lg">
+            Get test USDT tokens for the testnet
+          </p>
         </div>
 
         <Card className="bg-gray-900 border-gray-800">
@@ -34,10 +39,13 @@ export default function Minter() {
           <CardContent className="space-y-6">
             <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
               <p className="text-sm text-blue-300">
-                💡 <strong>Testnet Only:</strong> These are test USDT tokens with no real value. Use them to test swaps, pools, and other platform features.
+                💡 <strong>Testnet Only:</strong> These are test USDT tokens
+                with no real value. Use them to test swaps, pools, and other
+                platform features.
               </p>
               <p className="text-xs text-blue-400 mt-2">
-                Contract: {CONTRACT_ADDRESSES.USDTToken.slice(0, 8)}...{CONTRACT_ADDRESSES.USDTToken.slice(-8)}
+                Contract: {CONTRACT_ADDRESSES.USDTToken.slice(0, 8)}...
+                {CONTRACT_ADDRESSES.USDTToken.slice(-8)}
               </p>
             </div>
 
@@ -79,43 +87,53 @@ export default function Minter() {
             )}
 
             <Button
-              onClick={() => void (async () => {
-                if (!address || !signTransaction) {
-                  setStatus({ type: "error", message: "Please connect your wallet first" });
-                  return;
-                }
+              onClick={() =>
+                void (async () => {
+                  if (!address || !signTransaction) {
+                    setStatus({
+                      type: "error",
+                      message: "Please connect your wallet first",
+                    });
+                    return;
+                  }
 
-                setIsMinting(true);
-                setStatus(null);
+                  setIsMinting(true);
+                  setStatus(null);
 
-                try {
-                  // Set wallet options on token contract
-                  token.options.publicKey = address;
-                  token.options.signTransaction = signTransaction;
+                  try {
+                    // Set wallet options on token contract
+                    token.options.publicKey = address;
+                    token.options.signTransaction = signTransaction;
 
-                  // Mint USDT (6 decimals)
-                  const tx = await token.mint({
-                    to: address,
-                    amount: BigInt(amount) * BigInt(10 ** 6)
-                  });
+                    // Mint USDT (6 decimals)
+                    const tx = await token.mint({
+                      to: address,
+                      amount: BigInt(
+                        Math.floor(Number(amount) * Math.pow(10, 6)),
+                      ),
+                    });
 
-                  const { result } = await tx.signAndSend();
-                  console.log("Mint result:", result);
-                  
-                  setStatus({ 
-                    type: "success", 
-                    message: `Successfully minted ${amount} USDT to your wallet!` 
-                  });
-                } catch (error) {
-                  console.error("Mint error:", error);
-                  setStatus({ 
-                    type: "error", 
-                    message: error instanceof Error ? error.message : "Minting failed. Make sure you have XLM for fees." 
-                  });
-                } finally {
-                  setIsMinting(false);
-                }
-              })()}
+                    const { result } = await tx.signAndSend();
+                    console.log("Mint result:", result);
+
+                    setStatus({
+                      type: "success",
+                      message: `Successfully minted ${amount} USDT to your wallet!`,
+                    });
+                  } catch (error) {
+                    console.error("Mint error:", error);
+                    setStatus({
+                      type: "error",
+                      message:
+                        error instanceof Error
+                          ? error.message
+                          : "Minting failed. Make sure you have XLM for fees.",
+                    });
+                  } finally {
+                    setIsMinting(false);
+                  }
+                })()
+              }
               className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3"
               disabled={isMinting || !address || !amount || Number(amount) <= 0}
             >
@@ -135,11 +153,13 @@ export default function Minter() {
             </Button>
 
             {status && (
-              <div className={`flex items-center gap-2 p-3 rounded-lg ${
-                status.type === "success" 
-                  ? "bg-green-900/20 border border-green-500/30 text-green-400" 
-                  : "bg-red-900/20 border border-red-500/30 text-red-400"
-              }`}>
+              <div
+                className={`flex items-center gap-2 p-3 rounded-lg ${
+                  status.type === "success"
+                    ? "bg-green-900/20 border border-green-500/30 text-green-400"
+                    : "bg-red-900/20 border border-red-500/30 text-red-400"
+                }`}
+              >
                 {status.type === "success" ? (
                   <CheckCircle className="w-5 h-5" />
                 ) : (
@@ -160,7 +180,12 @@ export default function Minter() {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-400">
             Need XLM for transaction fees?{" "}
-            <a href="https://laboratory.stellar.org/#account-creator?network=test" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+            <a
+              href="https://laboratory.stellar.org/#account-creator?network=test"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300"
+            >
               Use Stellar Lab Friendbot →
             </a>
           </p>
@@ -169,4 +194,3 @@ export default function Minter() {
     </div>
   );
 }
-
