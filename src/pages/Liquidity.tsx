@@ -842,22 +842,46 @@ export default function Liquidity() {
 
       console.log("=== Starting Remove Liquidity ===");
       console.log("Pool:", selectedPool.poolAddress);
-      console.log("LP Balance (raw):", selectedPool.lpBalanceRaw.toString());
+      console.log("Percentage to remove:", `${removePercentage}%`);
+
+      // IMPORTANT: Fetch FRESH user LP balance from contract (not cached value)
+      pool.options.contractId = selectedPool.poolAddress;
+      pool.options.publicKey = address;
+
+      const userBalanceTx = await pool.balance_of({ id: address });
+      const actualUserBalanceRaw = BigInt(userBalanceTx.result);
+
+      console.log("Actual LP Balance (raw):", actualUserBalanceRaw.toString());
       console.log(
-        "Percentage to remove:",
-        `${removePercentage}% (${percentage})`,
+        "Actual LP Balance (human):",
+        Number(actualUserBalanceRaw) / Math.pow(10, 18),
       );
 
-      // Calculate LP amount to burn: lpAmountToRemove = userLpBalance * percentage
-      const percentageRaw = BigInt(Math.floor(percentage * Math.pow(10, 18)));
-      const lpAmountRaw =
-        (selectedPool.lpBalanceRaw * percentageRaw) / BigInt(Math.pow(10, 18));
+      if (actualUserBalanceRaw <= BigInt(0)) {
+        alert("You don't have any LP tokens in this pool");
+        return;
+      }
+
+      // Calculate LP amount using simple integer arithmetic (matching cosmoUI)
+      // lpAmount = (userBalance * percentage) / 100
+      const percentageRaw = BigInt(removePercentage); // Just use percentage as-is (25, 50, etc)
+      const lpAmountRaw = (actualUserBalanceRaw * percentageRaw) / BigInt(100);
 
       console.log("LP Amount to remove (raw):", lpAmountRaw.toString());
       console.log("LP Amount (human):", Number(lpAmountRaw) / Math.pow(10, 18));
+      console.log(
+        "Calculation:",
+        `(${actualUserBalanceRaw} * ${percentageRaw}) / 100 = ${lpAmountRaw}`,
+      );
 
       if (lpAmountRaw <= BigInt(0)) {
         alert("Amount too small to remove");
+        return;
+      }
+
+      // Validate amount doesn't exceed user's balance
+      if (lpAmountRaw > actualUserBalanceRaw) {
+        alert("Invalid amount - exceeds your balance");
         return;
       }
 
@@ -1309,14 +1333,22 @@ export default function Liquidity() {
                             LP Tokens to Remove:
                           </span>
                           <span className="text-white font-medium">
-                            {selectedPool.lpBalanceRaw &&
-                            selectedPool.lpBalanceRaw > BigInt(0)
-                              ? (
-                                  (Number(selectedPool.lpBalanceRaw) /
-                                    Math.pow(10, 18)) *
-                                  (removePercentage / 100)
-                                ).toFixed(6)
-                              : "0.00"}
+                            {(() => {
+                              if (
+                                !selectedPool.lpBalanceRaw ||
+                                selectedPool.lpBalanceRaw === BigInt(0)
+                              ) {
+                                return "0.000000";
+                              }
+                              // Use simple calculation matching the contract call: (balance * percentage) / 100
+                              const lpToRemoveRaw =
+                                (selectedPool.lpBalanceRaw *
+                                  BigInt(removePercentage)) /
+                                BigInt(100);
+                              const lpToRemove =
+                                Number(lpToRemoveRaw) / Math.pow(10, 18);
+                              return lpToRemove.toFixed(6);
+                            })()}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
@@ -1330,9 +1362,8 @@ export default function Liquidity() {
                                   !selectedPool.lpBalanceRaw ||
                                   selectedPool.lpBalanceRaw === BigInt(0)
                                 ) {
-                                  return `0.00 ${selectedPool.tokenASymbol}`;
+                                  return `0.000000 ${selectedPool.tokenASymbol}`;
                                 }
-                                const percentage = removePercentage / 100;
                                 const tokenADecimals =
                                   selectedPool.isXlmPool &&
                                   selectedPool.tokenASymbol === "XLM"
@@ -1340,6 +1371,9 @@ export default function Liquidity() {
                                     : selectedPool.tokenASymbol === "USDT"
                                       ? 6
                                       : 18;
+
+                                // Estimate token A return based on reserves and percentage
+                                const percentage = removePercentage / 100;
                                 const amountA =
                                   (Number(selectedPool.reserves[0]) *
                                     percentage) /
@@ -1353,9 +1387,8 @@ export default function Liquidity() {
                                   !selectedPool.lpBalanceRaw ||
                                   selectedPool.lpBalanceRaw === BigInt(0)
                                 ) {
-                                  return `0.00 ${selectedPool.tokenBSymbol}`;
+                                  return `0.000000 ${selectedPool.tokenBSymbol}`;
                                 }
-                                const percentage = removePercentage / 100;
                                 const tokenBDecimals =
                                   selectedPool.isXlmPool &&
                                   selectedPool.tokenBSymbol === "XLM"
@@ -1363,6 +1396,9 @@ export default function Liquidity() {
                                     : selectedPool.tokenBSymbol === "USDT"
                                       ? 6
                                       : 18;
+
+                                // Estimate token B return
+                                const percentage = removePercentage / 100;
                                 const amountB =
                                   (Number(selectedPool.reserves[1]) *
                                     percentage) /
