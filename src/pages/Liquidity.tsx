@@ -233,19 +233,19 @@ export default function Liquidity() {
             `Fetching pool ${index + 1}/${allPools.length}: ${poolAddr}`,
           );
 
-          // Set pool contract to this address
+          // Get token addresses - set contractId before each call
           pool.options.contractId = poolAddr;
-
-          // Get token addresses
           const tokenATx = await pool.get_token_a();
           const tokenA = tokenATx.result;
           console.log(`  Token A: ${tokenA}`);
 
+          pool.options.contractId = poolAddr;
           const tokenBTx = await pool.get_token_b();
           const tokenB = tokenBTx.result;
           console.log(`  Token B: ${tokenB}`);
 
           // Get reserves
+          pool.options.contractId = poolAddr;
           const reservesTx = await pool.get_reserves();
           const reserves = reservesTx.result as [bigint, bigint];
           console.log(`  Reserves: [${reserves[0]}, ${reserves[1]}]`);
@@ -327,13 +327,17 @@ export default function Liquidity() {
 
           if (address) {
             try {
+              // IMPORTANT: Set contractId for THIS specific pool before EACH call
+              pool.options.contractId = poolAddr;
               pool.options.publicKey = address;
 
               // Get user's LP balance using balance_of
               const balanceTx = await pool.balance_of({ id: address });
               lpBalanceRaw = BigInt(balanceTx.result);
 
-              console.log(`  LP Balance: ${lpBalanceRaw.toString()}`);
+              console.log(
+                `  LP Balance for ${poolAddr}: ${lpBalanceRaw.toString()}`,
+              );
 
               if (lpBalanceRaw > BigInt(0) && tvlNum > 0) {
                 // Format LP balance (18 decimals) - use 6 decimal places like cosmoUI
@@ -341,7 +345,8 @@ export default function Liquidity() {
                   Number(lpBalanceRaw) / Math.pow(10, 18);
                 lpTokenBalance = lpBalanceFormatted.toFixed(6); // Changed from .toFixed(4) to .toFixed(6)
 
-                // Get total LP supply
+                // Get total LP supply - reset contractId again for safety
+                pool.options.contractId = poolAddr;
                 const supplyTx = await pool.supply();
                 const totalSupply = BigInt(supplyTx.result);
 
@@ -406,7 +411,9 @@ export default function Liquidity() {
 
       console.log("=== Pools Loaded ===");
       console.log("Valid pools:", validPools.length);
-      setPools(validPools);
+
+      // Reverse to show newest pools first
+      setPools(validPools.reverse());
 
       // Calculate position summary if wallet connected
       if (address) {
