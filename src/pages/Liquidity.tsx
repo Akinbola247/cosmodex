@@ -5,7 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Droplets, Plus, Minus, TrendingUp, DollarSign, Loader2, Coins, RefreshCw } from "lucide-react";
+import {
+  Droplets,
+  Plus,
+  Minus,
+  TrendingUp,
+  DollarSign,
+  Loader2,
+  Coins,
+  RefreshCw,
+} from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
 import poolfactory from "@/contracts/poolfactory";
 import pool from "@/contracts/pool";
@@ -39,57 +48,161 @@ export default function Liquidity() {
   const [isLoadingPools, setIsLoadingPools] = useState(false);
   const [isAddingLiquidity, setIsAddingLiquidity] = useState(false);
   const [isRemovingLiquidity, setIsRemovingLiquidity] = useState(false);
-  
+
   // Balance state
   const [tokenABalance, setTokenABalance] = useState<string>("0");
   const [tokenBBalance, setTokenBBalance] = useState<string>("0");
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
-  
+
   // User position state
   const [totalLiquidity, setTotalLiquidity] = useState<string>("$0.00");
   const [totalFees, setTotalFees] = useState<string>("$0.00");
   const [activePositions, setActivePositions] = useState<number>(0);
   const [isLoadingPositions, setIsLoadingPositions] = useState(false);
-  
+
   // Liquidity step modal
   const [showLiquidityModal, setShowLiquidityModal] = useState(false);
-  const [liquiditySteps, setLiquiditySteps] = useState<Array<{
-    id: string;
-    title: string;
-    description: string;
-    status: 'pending' | 'processing' | 'completed' | 'error';
-  }>>([
+  const [liquiditySteps, setLiquiditySteps] = useState<
+    Array<{
+      id: string;
+      title: string;
+      description: string;
+      status: "pending" | "processing" | "completed" | "error";
+    }>
+  >([
     {
-      id: 'approve-a',
-      title: 'Approve Token A',
-      description: 'Allow pool to spend tokens',
-      status: 'pending'
+      id: "approve-a",
+      title: "Approve Token A",
+      description: "Allow pool to spend tokens",
+      status: "pending",
     },
     {
-      id: 'approve-b',
-      title: 'Approve Token B',
-      description: 'Allow pool to spend tokens',
-      status: 'pending'
+      id: "approve-b",
+      title: "Approve Token B",
+      description: "Allow pool to spend tokens",
+      status: "pending",
     },
     {
-      id: 'add-liquidity',
-      title: 'Add Liquidity',
-      description: 'Adding tokens to pool',
-      status: 'pending'
-    }
+      id: "add-liquidity",
+      title: "Add Liquidity",
+      description: "Adding tokens to pool",
+      status: "pending",
+    },
   ]);
   const [liquidityError, setLiquidityError] = useState<string | null>(null);
+
+  // Calculate proportional amount when adding liquidity to existing pool
+  const calculateProportionalAmount = (
+    amountIn: number,
+    isTokenA: boolean,
+  ): number => {
+    if (!selectedPool || amountIn <= 0) return 0;
+
+    const rawReserveA = selectedPool.reserves[0];
+    const rawReserveB = selectedPool.reserves[1];
+
+    if (rawReserveA === BigInt(0) || rawReserveB === BigInt(0)) {
+      console.log(
+        "No existing liquidity, cannot calculate proportional amount",
+      );
+      return 0; // No existing liquidity
+    }
+
+    // Get token decimals
+    const tokenADecimals =
+      selectedPool.isXlmPool && selectedPool.tokenASymbol === "XLM"
+        ? 7
+        : selectedPool.tokenASymbol === "USDT"
+          ? 6
+          : 18;
+    const tokenBDecimals =
+      selectedPool.isXlmPool && selectedPool.tokenBSymbol === "XLM"
+        ? 7
+        : selectedPool.tokenBSymbol === "USDT"
+          ? 6
+          : 18;
+
+    let reserveIn: bigint;
+    let reserveOut: bigint;
+    let decimalsIn: number;
+    let decimalsOut: number;
+
+    if (isTokenA) {
+      // Calculating proportional amount of token B based on token A input
+      reserveIn = rawReserveA; // Token A reserve
+      reserveOut = rawReserveB; // Token B reserve
+      decimalsIn = tokenADecimals;
+      decimalsOut = tokenBDecimals;
+    } else {
+      // Calculating proportional amount of token A based on token B input
+      reserveIn = rawReserveB; // Token B reserve
+      reserveOut = rawReserveA; // Token A reserve
+      decimalsIn = tokenBDecimals;
+      decimalsOut = tokenADecimals;
+    }
+
+    // Convert input amount to raw format (with token decimals)
+    const amountInRaw = BigInt(Math.round(amountIn * Math.pow(10, decimalsIn)));
+
+    // Calculate proportional amount: amountOut = (amountIn * reserveOut) / reserveIn
+    const amountOutRaw = (amountInRaw * reserveOut) / reserveIn;
+
+    // Convert back to human readable format
+    const result = Number(amountOutRaw) / Math.pow(10, decimalsOut);
+
+    console.log("Proportional calculation:", {
+      amountIn,
+      isTokenA,
+      reserveIn: reserveIn.toString(),
+      reserveOut: reserveOut.toString(),
+      amountOutRaw: amountOutRaw.toString(),
+      result,
+      calculation: `${amountIn} → ${result}`,
+    });
+
+    return result;
+  };
+
+  // Handle token A amount change with proportional calculation
+  const handleTokenAChange = (value: string) => {
+    setTokenAAmount(value);
+
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue > 0 && selectedPool) {
+      const proportionalB = calculateProportionalAmount(numValue, true);
+      if (proportionalB > 0) {
+        setTokenBAmount(proportionalB.toString());
+      }
+    } else if (value === "") {
+      setTokenBAmount("");
+    }
+  };
+
+  // Handle token B amount change with proportional calculation
+  const handleTokenBChange = (value: string) => {
+    setTokenBAmount(value);
+
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue > 0 && selectedPool) {
+      const proportionalA = calculateProportionalAmount(numValue, false);
+      if (proportionalA > 0) {
+        setTokenAAmount(proportionalA.toString());
+      }
+    } else if (value === "") {
+      setTokenAAmount("");
+    }
+  };
 
   // Fetch all pools
   const fetchPools = async () => {
     try {
       setIsLoadingPools(true);
-      
+
       console.log("=== Fetching All Pools ===");
 
       // Get all pools from poolfactory (read-only, no wallet needed)
       const tx = await poolfactory.get_all_pools();
-      
+
       console.log("Raw pools response:", tx);
 
       // Read-only function - result available from simulation
@@ -116,53 +229,55 @@ export default function Liquidity() {
       // Fetch details for each pool
       const poolPromises = allPools.map(async (poolAddr, index) => {
         try {
-          console.log(`Fetching pool ${index + 1}/${allPools.length}: ${poolAddr}`);
-          
+          console.log(
+            `Fetching pool ${index + 1}/${allPools.length}: ${poolAddr}`,
+          );
+
           // Set pool contract to this address
           pool.options.contractId = poolAddr;
-          
+
           // Get token addresses
           const tokenATx = await pool.get_token_a();
           const tokenA = tokenATx.result;
           console.log(`  Token A: ${tokenA}`);
-          
+
           const tokenBTx = await pool.get_token_b();
           const tokenB = tokenBTx.result;
           console.log(`  Token B: ${tokenB}`);
-          
+
           // Get reserves
           const reservesTx = await pool.get_reserves();
           const reserves = reservesTx.result as [bigint, bigint];
           console.log(`  Reserves: [${reserves[0]}, ${reserves[1]}]`);
-          
+
           // Get token symbols
           token.options.contractId = tokenA;
           const symbolATx = await token.symbol();
           let tokenASymbol = symbolATx.result || "TOKEN";
-          
+
           // Check if token A is XLM
           const isXlmPoolA = tokenA === CONTRACT_ADDRESSES.NativeXLM;
           if (isXlmPoolA) tokenASymbol = "XLM";
-          
+
           token.options.contractId = tokenB;
           const symbolBTx = await token.symbol();
           let tokenBSymbol = symbolBTx.result || "TOKEN";
-          
+
           // Check if token B is XLM
           const isXlmPoolB = tokenB === CONTRACT_ADDRESSES.NativeXLM;
           if (isXlmPoolB) tokenBSymbol = "XLM";
-          
+
           const isXlmPool = isXlmPoolA || isXlmPoolB;
-          
+
           // Calculate TVL from reserves (in USD equivalent)
           let tvl = "$0.00";
           let tvlNum = 0;
-          
+
           try {
             // Determine which reserve is the stablecoin/XLM
             let stablecoinReserve: bigint;
             let stablecoinDecimals: number;
-            
+
             if (isXlmPoolA) {
               // XLM is token A
               stablecoinReserve = reserves[0];
@@ -175,7 +290,7 @@ export default function Liquidity() {
               // USDC pool - determine which is USDC by magnitude
               const reserveAMagnitude = reserves[0].toString().length;
               const reserveBMagnitude = reserves[1].toString().length;
-              
+
               if (reserveAMagnitude < reserveBMagnitude) {
                 // Reserve A is USDC (smaller magnitude)
                 stablecoinReserve = reserves[0];
@@ -186,11 +301,12 @@ export default function Liquidity() {
                 stablecoinDecimals = 6;
               }
             }
-            
+
             // TVL = 2x the stablecoin reserve (both sides of pool)
-            const stablecoinValue = Number(stablecoinReserve) / Math.pow(10, stablecoinDecimals);
+            const stablecoinValue =
+              Number(stablecoinReserve) / Math.pow(10, stablecoinDecimals);
             tvlNum = stablecoinValue * 2;
-            
+
             // Format TVL
             if (tvlNum >= 1000000) {
               tvl = `$${(tvlNum / 1000000).toFixed(1)}M`;
@@ -203,45 +319,52 @@ export default function Liquidity() {
           } catch (error) {
             console.log(`  Could not calculate TVL:`, error);
           }
-          
+
           // Get user's LP balance and calculate position value (matching cosmoUI)
           let myLiquidity = "0.00";
           let lpTokenBalance = "0.00";
           let lpBalanceRaw = BigInt(0);
-          
+
           if (address) {
             try {
               pool.options.publicKey = address;
-              
+
               // Get user's LP balance using balance_of
               const balanceTx = await pool.balance_of({ id: address });
               lpBalanceRaw = BigInt(balanceTx.result);
-              
+
               console.log(`  LP Balance: ${lpBalanceRaw.toString()}`);
-              
+
               if (lpBalanceRaw > BigInt(0) && tvlNum > 0) {
                 // Format LP balance (18 decimals) - use 6 decimal places like cosmoUI
-                const lpBalanceFormatted = Number(lpBalanceRaw) / Math.pow(10, 18);
-                lpTokenBalance = lpBalanceFormatted.toFixed(6);  // Changed from .toFixed(4) to .toFixed(6)
-                
+                const lpBalanceFormatted =
+                  Number(lpBalanceRaw) / Math.pow(10, 18);
+                lpTokenBalance = lpBalanceFormatted.toFixed(6); // Changed from .toFixed(4) to .toFixed(6)
+
                 // Get total LP supply
                 const supplyTx = await pool.supply();
                 const totalSupply = BigInt(supplyTx.result);
-                
+
                 console.log(`  LP Balance (raw): ${lpBalanceRaw.toString()}`);
                 console.log(`  LP Balance (formatted): ${lpBalanceFormatted}`);
                 console.log(`  Total Supply (raw): ${totalSupply.toString()}`);
-                console.log(`  Total Supply (formatted): ${Number(totalSupply) / Math.pow(10, 18)}`);
-                
+                console.log(
+                  `  Total Supply (formatted): ${Number(totalSupply) / Math.pow(10, 18)}`,
+                );
+
                 if (totalSupply > BigInt(0)) {
                   // Calculate position value: (lpBalance / totalSupply) * TVL
-                  const positionValue = (Number(lpBalanceRaw) / Number(totalSupply)) * tvlNum;
+                  const positionValue =
+                    (Number(lpBalanceRaw) / Number(totalSupply)) * tvlNum;
                   myLiquidity = `$${positionValue.toFixed(2)}`;
-                  
-                  const sharePercent = (Number(lpBalanceRaw) / Number(totalSupply)) * 100;
+
+                  const sharePercent =
+                    (Number(lpBalanceRaw) / Number(totalSupply)) * 100;
                   console.log(`  Share: ${sharePercent.toFixed(6)}%`);
                   console.log(`  Position Value: $${positionValue.toFixed(2)}`);
-                  console.log(`  ✅ Summary: ${lpBalanceFormatted.toFixed(6)} LP (${sharePercent.toFixed(2)}% of pool) = $${positionValue.toFixed(2)}`);
+                  console.log(
+                    `  ✅ Summary: ${lpBalanceFormatted.toFixed(6)} LP (${sharePercent.toFixed(2)}% of pool) = $${positionValue.toFixed(2)}`,
+                  );
                 }
               } else {
                 console.log(`  ℹ️ No LP balance for this pool`);
@@ -252,9 +375,9 @@ export default function Liquidity() {
           } else {
             console.log(`  ⚠️ Wallet not connected - skipping position fetch`);
           }
-          
+
           console.log(`  ✓ Pool: ${tokenASymbol}/${tokenBSymbol}`);
-          
+
           return {
             id: `pool-${index}`,
             poolAddress: poolAddr,
@@ -263,11 +386,11 @@ export default function Liquidity() {
             tokenASymbol,
             tokenBSymbol,
             reserves,
-            tvl,  // Real TVL from contract
-            tvlNum: tvlNum || 0,  // Numeric value for calculations
+            tvl, // Real TVL from contract
+            tvlNum: tvlNum || 0, // Numeric value for calculations
             myLiquidity,
             lpTokenBalance,
-            lpBalanceRaw: lpBalanceRaw || BigInt(0),  // Raw LP balance for calculations
+            lpBalanceRaw: lpBalanceRaw || BigInt(0), // Raw LP balance for calculations
             isXlmPool,
           };
         } catch (error) {
@@ -277,12 +400,14 @@ export default function Liquidity() {
       });
 
       const poolResults = await Promise.all(poolPromises);
-      const validPools = poolResults.filter((p): p is NonNullable<typeof p> => p !== null) as PoolData[];
+      const validPools = poolResults.filter(
+        (p): p is NonNullable<typeof p> => p !== null,
+      ) as PoolData[];
 
       console.log("=== Pools Loaded ===");
       console.log("Valid pools:", validPools.length);
       setPools(validPools);
-      
+
       // Calculate position summary if wallet connected
       if (address) {
         void calculatePositionSummary(validPools);
@@ -314,48 +439,65 @@ export default function Liquidity() {
 
       for (const poolData of poolsList) {
         try {
-          console.log(`  Checking pool ${poolData.tokenASymbol}/${poolData.tokenBSymbol}:`, {
-            lpBalanceRaw: poolData.lpBalanceRaw?.toString(),
-            myLiquidity: poolData.myLiquidity,
-            lpTokenBalance: poolData.lpTokenBalance
-          });
-          
+          console.log(
+            `  Checking pool ${poolData.tokenASymbol}/${poolData.tokenBSymbol}:`,
+            {
+              lpBalanceRaw: poolData.lpBalanceRaw?.toString(),
+              myLiquidity: poolData.myLiquidity,
+              lpTokenBalance: poolData.lpTokenBalance,
+            },
+          );
+
           // Use already-fetched LP balance
           if (poolData.lpBalanceRaw && poolData.lpBalanceRaw > BigInt(0)) {
             activeCount++;
-            
+
             // Use already-calculated position value from myLiquidity
-            const liquidityStr = poolData.myLiquidity.replace(/[$,]/g, '');
+            const liquidityStr = poolData.myLiquidity.replace(/[$,]/g, "");
             const positionValue = parseFloat(liquidityStr);
-            
-            console.log(`  Parsed value: liquidityStr="${liquidityStr}", positionValue=${positionValue}`);
-            
+
+            console.log(
+              `  Parsed value: liquidityStr="${liquidityStr}", positionValue=${positionValue}`,
+            );
+
             if (!isNaN(positionValue) && positionValue > 0) {
               totalLiquidityValue += positionValue;
-              console.log(`  ✅ ${poolData.tokenASymbol}/${poolData.tokenBSymbol}: $${positionValue.toFixed(2)}`);
+              console.log(
+                `  ✅ ${poolData.tokenASymbol}/${poolData.tokenBSymbol}: $${positionValue.toFixed(2)}`,
+              );
             } else {
-              console.log(`  ⚠️ Invalid position value for ${poolData.tokenASymbol}/${poolData.tokenBSymbol}`);
+              console.log(
+                `  ⚠️ Invalid position value for ${poolData.tokenASymbol}/${poolData.tokenBSymbol}`,
+              );
             }
 
             // Get unclaimed fees
             try {
               pool.options.contractId = poolData.poolAddress;
               pool.options.publicKey = address;
-              const feesTx = await pool.get_user_unclaimed_fees({ user: address });
+              const feesTx = await pool.get_user_unclaimed_fees({
+                user: address,
+              });
               const unclaimedFees = feesTx.result;
-              
+
               if (unclaimedFees > BigInt(0)) {
                 // Fees are typically in USDC (6 decimals)
                 const feesNum = Number(unclaimedFees) / Math.pow(10, 6);
                 totalFeesValue += feesNum;
-                console.log(`  Unclaimed fees in ${poolData.tokenASymbol}/${poolData.tokenBSymbol}: $${feesNum.toFixed(2)}`);
+                console.log(
+                  `  Unclaimed fees in ${poolData.tokenASymbol}/${poolData.tokenBSymbol}: $${feesNum.toFixed(2)}`,
+                );
               }
             } catch {
-              console.log(`  No unclaimed fees for pool ${poolData.poolAddress}`);
+              console.log(
+                `  No unclaimed fees for pool ${poolData.poolAddress}`,
+              );
             }
           }
         } catch {
-          console.log(`  Error calculating position for pool ${poolData.poolAddress}`);
+          console.log(
+            `  Error calculating position for pool ${poolData.poolAddress}`,
+          );
         }
       }
 
@@ -385,37 +527,47 @@ export default function Liquidity() {
       // Fetch token A balance
       token.options.publicKey = address;
       token.options.contractId = selectedPool.tokenA;
-      
+
       const balanceATx = await token.balance({ id: address });
       const balanceAResult = balanceATx.result;
-      
+
       // Format based on decimals (assume 18 for custom tokens, 6 for USDC, 7 for XLM)
       let decimalsA = 18;
-      if (selectedPool.tokenASymbol === "USDT" || selectedPool.tokenASymbol === "USDC") {
+      if (
+        selectedPool.tokenASymbol === "USDT" ||
+        selectedPool.tokenASymbol === "USDC"
+      ) {
         decimalsA = 6;
       } else if (selectedPool.tokenASymbol === "XLM") {
         decimalsA = 7;
       }
-      
+
       const balanceA = Number(balanceAResult) / Math.pow(10, decimalsA);
       setTokenABalance(balanceA.toFixed(4));
-      console.log(`  Token A (${selectedPool.tokenASymbol}): ${balanceA.toFixed(4)}`);
+      console.log(
+        `  Token A (${selectedPool.tokenASymbol}): ${balanceA.toFixed(4)}`,
+      );
 
       // Fetch token B balance
       token.options.contractId = selectedPool.tokenB;
       const balanceBTx = await token.balance({ id: address });
       const balanceBResult = balanceBTx.result;
-      
+
       let decimalsB = 18;
-      if (selectedPool.tokenBSymbol === "USDT" || selectedPool.tokenBSymbol === "USDC") {
+      if (
+        selectedPool.tokenBSymbol === "USDT" ||
+        selectedPool.tokenBSymbol === "USDC"
+      ) {
         decimalsB = 6;
       } else if (selectedPool.tokenBSymbol === "XLM") {
         decimalsB = 7;
       }
-      
+
       const balanceB = Number(balanceBResult) / Math.pow(10, decimalsB);
       setTokenBBalance(balanceB.toFixed(4));
-      console.log(`  Token B (${selectedPool.tokenBSymbol}): ${balanceB.toFixed(4)}`);
+      console.log(
+        `  Token B (${selectedPool.tokenBSymbol}): ${balanceB.toFixed(4)}`,
+      );
 
       console.log("=== Balances Loaded ===");
     } catch (error) {
@@ -463,7 +615,12 @@ export default function Liquidity() {
       return;
     }
 
-    if (!tokenAAmount || !tokenBAmount || Number(tokenAAmount) <= 0 || Number(tokenBAmount) <= 0) {
+    if (
+      !tokenAAmount ||
+      !tokenBAmount ||
+      Number(tokenAAmount) <= 0 ||
+      Number(tokenBAmount) <= 0
+    ) {
       alert("Please enter valid amounts for both tokens");
       return;
     }
@@ -475,64 +632,80 @@ export default function Liquidity() {
     // Reset steps
     setLiquiditySteps([
       {
-        id: 'approve-a',
+        id: "approve-a",
         title: `Approve ${selectedPool.tokenASymbol}`,
-        description: 'Allow pool to spend your tokens',
-        status: 'pending'
+        description: "Allow pool to spend your tokens",
+        status: "pending",
       },
       {
-        id: 'approve-b',
+        id: "approve-b",
         title: `Approve ${selectedPool.tokenBSymbol}`,
-        description: selectedPool.isXlmPool && selectedPool.tokenBSymbol === 'XLM' 
-          ? 'Native XLM ready' 
-          : 'Allow pool to spend your tokens',
-        status: 'pending'
+        description:
+          selectedPool.isXlmPool && selectedPool.tokenBSymbol === "XLM"
+            ? "Native XLM ready"
+            : "Allow pool to spend your tokens",
+        status: "pending",
       },
       {
-        id: 'add-liquidity',
-        title: 'Add Liquidity',
-        description: 'Adding tokens to pool',
-        status: 'pending'
-      }
+        id: "add-liquidity",
+        title: "Add Liquidity",
+        description: "Adding tokens to pool",
+        status: "pending",
+      },
     ]);
 
     try {
       console.log("=== Starting Add Liquidity ===");
       console.log("Pool:", selectedPool.poolAddress);
       console.log("Amounts:", { tokenA: tokenAAmount, tokenB: tokenBAmount });
-      
+
       // Get current ledger for expiration
       const { rpc } = await import("@stellar/stellar-sdk");
       const rpcServer = new rpc.Server("https://soroban-testnet.stellar.org");
       const latestLedger = await rpcServer.getLatestLedger();
       const expirationLedger = latestLedger.sequence + 100000;
-      
+
       console.log("Expiration ledger:", expirationLedger);
-      
+
       // Determine decimals
       let decimalsA = 18;
-      if (selectedPool.tokenASymbol === "USDT" || selectedPool.tokenASymbol === "USDC") {
+      if (
+        selectedPool.tokenASymbol === "USDT" ||
+        selectedPool.tokenASymbol === "USDC"
+      ) {
         decimalsA = 6;
       } else if (selectedPool.tokenASymbol === "XLM") {
         decimalsA = 7;
       }
-      
+
       let decimalsB = 18;
-      if (selectedPool.tokenBSymbol === "USDT" || selectedPool.tokenBSymbol === "USDC") {
+      if (
+        selectedPool.tokenBSymbol === "USDT" ||
+        selectedPool.tokenBSymbol === "USDC"
+      ) {
         decimalsB = 6;
       } else if (selectedPool.tokenBSymbol === "XLM") {
         decimalsB = 7;
       }
 
-      const amountARaw = BigInt(Math.floor(Number(tokenAAmount) * Math.pow(10, decimalsA)));
-      const amountBRaw = BigInt(Math.floor(Number(tokenBAmount) * Math.pow(10, decimalsB)));
-      
-      console.log("Raw amounts:", { amountARaw: amountARaw.toString(), amountBRaw: amountBRaw.toString() });
+      const amountARaw = BigInt(
+        Math.floor(Number(tokenAAmount) * Math.pow(10, decimalsA)),
+      );
+      const amountBRaw = BigInt(
+        Math.floor(Number(tokenBAmount) * Math.pow(10, decimalsB)),
+      );
+
+      console.log("Raw amounts:", {
+        amountARaw: amountARaw.toString(),
+        amountBRaw: amountBRaw.toString(),
+      });
 
       // Step 1: Approve Token A
-      setLiquiditySteps(prev => prev.map(step => 
-        step.id === 'approve-a' ? { ...step, status: 'processing' } : step
-      ));
+      setLiquiditySteps((prev) =>
+        prev.map((step) =>
+          step.id === "approve-a" ? { ...step, status: "processing" } : step,
+        ),
+      );
 
       token.options.publicKey = address;
       token.options.signTransaction = signTransaction;
@@ -548,17 +721,22 @@ export default function Liquidity() {
       await approveATx.signAndSend();
       console.log(`${selectedPool.tokenASymbol} approved`);
 
-      setLiquiditySteps(prev => prev.map(step => 
-        step.id === 'approve-a' ? { ...step, status: 'completed' } : step
-      ));
+      setLiquiditySteps((prev) =>
+        prev.map((step) =>
+          step.id === "approve-a" ? { ...step, status: "completed" } : step,
+        ),
+      );
 
       // Step 2: Approve Token B (skip if XLM)
-      setLiquiditySteps(prev => prev.map(step => 
-        step.id === 'approve-b' ? { ...step, status: 'processing' } : step
-      ));
+      setLiquiditySteps((prev) =>
+        prev.map((step) =>
+          step.id === "approve-b" ? { ...step, status: "processing" } : step,
+        ),
+      );
 
-      const isTokenBXLM = selectedPool.tokenBSymbol === 'XLM' && selectedPool.isXlmPool;
-      
+      const isTokenBXLM =
+        selectedPool.tokenBSymbol === "XLM" && selectedPool.isXlmPool;
+
       if (!isTokenBXLM) {
         token.options.contractId = selectedPool.tokenB;
 
@@ -575,14 +753,20 @@ export default function Liquidity() {
         console.log("XLM pool - no approval needed for native XLM");
       }
 
-      setLiquiditySteps(prev => prev.map(step => 
-        step.id === 'approve-b' ? { ...step, status: 'completed' } : step
-      ));
+      setLiquiditySteps((prev) =>
+        prev.map((step) =>
+          step.id === "approve-b" ? { ...step, status: "completed" } : step,
+        ),
+      );
 
       // Step 3: Add liquidity
-      setLiquiditySteps(prev => prev.map(step => 
-        step.id === 'add-liquidity' ? { ...step, status: 'processing' } : step
-      ));
+      setLiquiditySteps((prev) =>
+        prev.map((step) =>
+          step.id === "add-liquidity"
+            ? { ...step, status: "processing" }
+            : step,
+        ),
+      );
 
       pool.options.publicKey = address;
       pool.options.signTransaction = signTransaction;
@@ -597,9 +781,11 @@ export default function Liquidity() {
       const { result } = await addLiqTx.signAndSend();
       console.log("Liquidity added:", result);
 
-      setLiquiditySteps(prev => prev.map(step => 
-        step.id === 'add-liquidity' ? { ...step, status: 'completed' } : step
-      ));
+      setLiquiditySteps((prev) =>
+        prev.map((step) =>
+          step.id === "add-liquidity" ? { ...step, status: "completed" } : step,
+        ),
+      );
 
       // Success! Refresh balances and pools
       setTimeout(() => {
@@ -609,13 +795,16 @@ export default function Liquidity() {
         void fetchBalances();
         void fetchPools();
       }, 2000);
-
     } catch (error) {
       console.error("Error adding liquidity:", error);
-      setLiquidityError(error instanceof Error ? error.message : "Failed to add liquidity");
-      setLiquiditySteps(prev => prev.map(step => 
-        step.status === 'processing' ? { ...step, status: 'error' } : step
-      ));
+      setLiquidityError(
+        error instanceof Error ? error.message : "Failed to add liquidity",
+      );
+      setLiquiditySteps((prev) =>
+        prev.map((step) =>
+          step.status === "processing" ? { ...step, status: "error" } : step,
+        ),
+      );
     } finally {
       setIsAddingLiquidity(false);
     }
@@ -670,7 +859,9 @@ export default function Liquidity() {
           <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
             Liquidity Pools
           </h1>
-          <p className="text-gray-400 text-lg">Add or remove liquidity from pools to earn trading fees</p>
+          <p className="text-gray-400 text-lg">
+            Add or remove liquidity from pools to earn trading fees
+          </p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -689,7 +880,9 @@ export default function Liquidity() {
                     onClick={() => void fetchPools()}
                     disabled={isLoadingPools}
                   >
-                    <RefreshCw className={`h-4 w-4 ${isLoadingPools ? 'animate-spin' : ''}`} />
+                    <RefreshCw
+                      className={`h-4 w-4 ${isLoadingPools ? "animate-spin" : ""}`}
+                    />
                   </Button>
                 </CardTitle>
               </CardHeader>
@@ -718,19 +911,26 @@ export default function Liquidity() {
                         onClick={() => setSelectedPool(pool)}
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                           selectedPool?.id === pool.id
-                            ? 'border-blue-500 bg-blue-500/10'
-                            : 'border-gray-700 bg-gray-800 hover:border-gray-600'
+                            ? "border-blue-500 bg-blue-500/10"
+                            : "border-gray-700 bg-gray-800 hover:border-gray-600"
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center space-x-2">
                             <div className="flex items-center">
-                              <span className="font-bold">{pool.tokenASymbol}</span>
+                              <span className="font-bold">
+                                {pool.tokenASymbol}
+                              </span>
                               <span className="mx-1 text-gray-500">/</span>
-                              <span className="font-bold">{pool.tokenBSymbol}</span>
+                              <span className="font-bold">
+                                {pool.tokenBSymbol}
+                              </span>
                             </div>
                             {pool.isXlmPool && (
-                              <Badge variant="outline" className="text-yellow-400 border-yellow-400">
+                              <Badge
+                                variant="outline"
+                                className="text-yellow-400 border-yellow-400"
+                              >
                                 <Coins className="h-3 w-3 mr-1" />
                                 XLM
                               </Badge>
@@ -744,18 +944,23 @@ export default function Liquidity() {
                           </div>
                           <div className="flex justify-between">
                             <span>My Liquidity:</span>
-                            <span className={`font-medium ${
-                              pool.myLiquidity !== "0.00" && pool.myLiquidity !== "$0.00" 
-                                ? "text-green-400" 
-                                : "text-gray-400"
-                            }`}>
+                            <span
+                              className={`font-medium ${
+                                pool.myLiquidity !== "0.00" &&
+                                pool.myLiquidity !== "$0.00"
+                                  ? "text-green-400"
+                                  : "text-gray-400"
+                              }`}
+                            >
                               {pool.myLiquidity}
                             </span>
                           </div>
                           {pool.lpTokenBalance !== "0.00" && (
                             <div className="flex justify-between">
                               <span>LP Tokens:</span>
-                              <span className="text-blue-400">{pool.lpTokenBalance}</span>
+                              <span className="text-blue-400">
+                                {pool.lpTokenBalance}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -781,7 +986,9 @@ export default function Liquidity() {
                 {!selectedPool ? (
                   <div className="text-center py-12 text-gray-400">
                     <Droplets className="h-16 w-16 mx-auto mb-4 text-gray-600" />
-                    <p className="text-lg">Select a pool from the list to manage liquidity</p>
+                    <p className="text-lg">
+                      Select a pool from the list to manage liquidity
+                    </p>
                   </div>
                 ) : (
                   <Tabs defaultValue="add" className="w-full">
@@ -800,7 +1007,9 @@ export default function Liquidity() {
                     <TabsContent value="add" className="space-y-6 mt-6">
                       <div>
                         <Label className="flex items-center justify-between mb-2">
-                          <span>Token A Amount ({selectedPool.tokenASymbol})</span>
+                          <span>
+                            Token A Amount ({selectedPool.tokenASymbol})
+                          </span>
                           <div className="flex items-center space-x-2 text-xs">
                             {isLoadingBalances ? (
                               <div className="flex items-center space-x-1 text-gray-400">
@@ -829,14 +1038,16 @@ export default function Liquidity() {
                           type="number"
                           placeholder="0.00"
                           value={tokenAAmount}
-                          onChange={(e) => setTokenAAmount(e.target.value)}
+                          onChange={(e) => handleTokenAChange(e.target.value)}
                           className="bg-gray-800 border-gray-700"
                         />
                       </div>
 
                       <div>
                         <Label className="flex items-center justify-between mb-2">
-                          <span>Token B Amount ({selectedPool.tokenBSymbol})</span>
+                          <span>
+                            Token B Amount ({selectedPool.tokenBSymbol})
+                          </span>
                           <div className="flex items-center space-x-2 text-xs">
                             {isLoadingBalances ? (
                               <div className="flex items-center space-x-1 text-gray-400">
@@ -846,20 +1057,24 @@ export default function Liquidity() {
                             ) : (
                               <>
                                 <span className="text-gray-400">Balance:</span>
-                                <span className={`px-2 py-1 rounded-full font-medium ${
-                                  selectedPool.isXlmPool && selectedPool.tokenBSymbol === 'XLM'
-                                    ? 'bg-yellow-500/20 text-yellow-400'
-                                    : 'bg-green-500/20 text-green-400'
-                                }`}>
+                                <span
+                                  className={`px-2 py-1 rounded-full font-medium ${
+                                    selectedPool.isXlmPool &&
+                                    selectedPool.tokenBSymbol === "XLM"
+                                      ? "bg-yellow-500/20 text-yellow-400"
+                                      : "bg-green-500/20 text-green-400"
+                                  }`}
+                                >
                                   {tokenBBalance}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => void fetchBalances()}
                                   className={`transition-colors ${
-                                    selectedPool.isXlmPool && selectedPool.tokenBSymbol === 'XLM'
-                                      ? 'text-gray-400 hover:text-yellow-400'
-                                      : 'text-gray-400 hover:text-green-400'
+                                    selectedPool.isXlmPool &&
+                                    selectedPool.tokenBSymbol === "XLM"
+                                      ? "text-gray-400 hover:text-yellow-400"
+                                      : "text-gray-400 hover:text-green-400"
                                   }`}
                                   title="Refresh balance"
                                 >
@@ -873,7 +1088,7 @@ export default function Liquidity() {
                           type="number"
                           placeholder="0.00"
                           value={tokenBAmount}
-                          onChange={(e) => setTokenBAmount(e.target.value)}
+                          onChange={(e) => handleTokenBChange(e.target.value)}
                           className="bg-gray-800 border-gray-700"
                         />
                       </div>
@@ -881,7 +1096,9 @@ export default function Liquidity() {
                       <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
                         <div className="flex items-center space-x-2 mb-2">
                           <DollarSign className="h-4 w-4 text-blue-400" />
-                          <span className="text-sm font-medium text-blue-300">Liquidity Info</span>
+                          <span className="text-sm font-medium text-blue-300">
+                            Liquidity Info
+                          </span>
                         </div>
                         <div className="space-y-1 text-xs">
                           <div className="flex justify-between">
@@ -918,7 +1135,9 @@ export default function Liquidity() {
                       <div>
                         <Label className="flex justify-between">
                           <span>Amount to Remove</span>
-                          <span className="text-blue-400">{removePercentage}%</span>
+                          <span className="text-blue-400">
+                            {removePercentage}%
+                          </span>
                         </Label>
                         <div className="mt-4">
                           <input
@@ -927,7 +1146,9 @@ export default function Liquidity() {
                             max="100"
                             step="1"
                             value={removePercentage}
-                            onChange={(e) => setRemovePercentage(parseInt(e.target.value))}
+                            onChange={(e) =>
+                              setRemovePercentage(parseInt(e.target.value))
+                            }
                             className="slider w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                           />
                           <div className="flex justify-between text-xs text-gray-500 mt-2">
@@ -965,14 +1186,22 @@ export default function Liquidity() {
 
                       <div className="bg-gray-800 p-4 rounded-lg space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">LP Tokens to Remove:</span>
+                          <span className="text-gray-400">
+                            LP Tokens to Remove:
+                          </span>
                           <span className="text-white">0.00</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">You will receive:</span>
+                          <span className="text-gray-400">
+                            You will receive:
+                          </span>
                           <div className="text-right">
-                            <div className="text-white">0.00 {selectedPool.tokenASymbol}</div>
-                            <div className="text-white">0.00 {selectedPool.tokenBSymbol}</div>
+                            <div className="text-white">
+                              0.00 {selectedPool.tokenASymbol}
+                            </div>
+                            <div className="text-white">
+                              0.00 {selectedPool.tokenBSymbol}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1018,7 +1247,9 @@ export default function Liquidity() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gray-800 p-4 rounded-lg">
-                  <div className="text-xs text-gray-400 mb-1">Total Liquidity</div>
+                  <div className="text-xs text-gray-400 mb-1">
+                    Total Liquidity
+                  </div>
                   <div className="text-2xl font-bold text-white">
                     {isLoadingPositions ? (
                       <Loader2 className="h-6 w-6 animate-spin" />
@@ -1029,7 +1260,9 @@ export default function Liquidity() {
                   <p className="text-xs text-gray-500 mt-1">Across all pools</p>
                 </div>
                 <div className="bg-gray-800 p-4 rounded-lg">
-                  <div className="text-xs text-gray-400 mb-1">Total Fees Earned</div>
+                  <div className="text-xs text-gray-400 mb-1">
+                    Total Fees Earned
+                  </div>
                   <div className="text-2xl font-bold text-green-400">
                     {isLoadingPositions ? (
                       <Loader2 className="h-6 w-6 animate-spin" />
@@ -1040,7 +1273,9 @@ export default function Liquidity() {
                   <p className="text-xs text-gray-500 mt-1">Unclaimed fees</p>
                 </div>
                 <div className="bg-gray-800 p-4 rounded-lg">
-                  <div className="text-xs text-gray-400 mb-1">Active Positions</div>
+                  <div className="text-xs text-gray-400 mb-1">
+                    Active Positions
+                  </div>
                   <div className="text-2xl font-bold text-blue-400">
                     {isLoadingPositions ? (
                       <Loader2 className="h-6 w-6 animate-spin" />
@@ -1048,7 +1283,9 @@ export default function Liquidity() {
                       activePositions
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Pools with liquidity</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Pools with liquidity
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -1066,40 +1303,49 @@ export default function Liquidity() {
                 <div className="space-y-4">
                   {liquiditySteps.map((step, index) => (
                     <div key={step.id} className="flex items-start space-x-3">
-                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
-                        step.status === 'completed' ? 'bg-green-500' :
-                        step.status === 'processing' ? 'bg-blue-500' :
-                        step.status === 'error' ? 'bg-red-500' :
-                        'bg-gray-700'
-                      }`}>
-                        {step.status === 'completed' ? (
+                      <div
+                        className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                          step.status === "completed"
+                            ? "bg-green-500"
+                            : step.status === "processing"
+                              ? "bg-blue-500"
+                              : step.status === "error"
+                                ? "bg-red-500"
+                                : "bg-gray-700"
+                        }`}
+                      >
+                        {step.status === "completed" ? (
                           <span className="text-white text-xs">✓</span>
-                        ) : step.status === 'processing' ? (
+                        ) : step.status === "processing" ? (
                           <Loader2 className="w-4 h-4 text-white animate-spin" />
                         ) : (
-                          <span className="text-xs text-white">{index + 1}</span>
+                          <span className="text-xs text-white">
+                            {index + 1}
+                          </span>
                         )}
                       </div>
                       <div className="flex-1">
                         <div className="font-medium text-sm">{step.title}</div>
-                        <div className="text-xs text-gray-400">{step.description}</div>
+                        <div className="text-xs text-gray-400">
+                          {step.description}
+                        </div>
                       </div>
                     </div>
                   ))}
-                  
+
                   {liquidityError && (
                     <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm mt-4">
                       {liquidityError}
                     </div>
                   )}
 
-                  {liquiditySteps.every(s => s.status === 'completed') && (
+                  {liquiditySteps.every((s) => s.status === "completed") && (
                     <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3 text-green-400 text-sm mt-4">
                       ✓ Liquidity added successfully! Refreshing...
                     </div>
                   )}
 
-                  {liquiditySteps.some(s => s.status === 'error') && (
+                  {liquiditySteps.some((s) => s.status === "error") && (
                     <Button
                       onClick={() => setShowLiquidityModal(false)}
                       variant="outline"
