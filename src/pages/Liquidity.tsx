@@ -1221,6 +1221,36 @@ export default function Liquidity() {
 
                     {/* Remove Liquidity Tab */}
                     <TabsContent value="remove" className="space-y-6 mt-6">
+                      {/* Current Position Display */}
+                      <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <Coins className="h-4 w-4 text-blue-400" />
+                          <span className="text-sm font-medium text-blue-300">
+                            Your Current Position
+                          </span>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">My Liquidity:</span>
+                            <span className="text-white font-medium">
+                              {selectedPool.myLiquidity}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">LP Tokens:</span>
+                            <span className="text-blue-400 font-medium">
+                              {selectedPool.lpTokenBalance}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Pool TVL:</span>
+                            <span className="text-gray-300">
+                              {selectedPool.tvl}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
                       <div>
                         <Label className="flex justify-between">
                           <span>Amount to Remove</span>
@@ -1278,18 +1308,67 @@ export default function Liquidity() {
                           <span className="text-gray-400">
                             LP Tokens to Remove:
                           </span>
-                          <span className="text-white">0.00</span>
+                          <span className="text-white font-medium">
+                            {selectedPool.lpBalanceRaw &&
+                            selectedPool.lpBalanceRaw > BigInt(0)
+                              ? (
+                                  (Number(selectedPool.lpBalanceRaw) /
+                                    Math.pow(10, 18)) *
+                                  (removePercentage / 100)
+                                ).toFixed(6)
+                              : "0.00"}
+                          </span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-400">
                             You will receive:
                           </span>
                           <div className="text-right">
-                            <div className="text-white">
-                              0.00 {selectedPool.tokenASymbol}
+                            <div className="text-white font-medium">
+                              {(() => {
+                                if (
+                                  !selectedPool.lpBalanceRaw ||
+                                  selectedPool.lpBalanceRaw === BigInt(0)
+                                ) {
+                                  return `0.00 ${selectedPool.tokenASymbol}`;
+                                }
+                                const percentage = removePercentage / 100;
+                                const tokenADecimals =
+                                  selectedPool.isXlmPool &&
+                                  selectedPool.tokenASymbol === "XLM"
+                                    ? 7
+                                    : selectedPool.tokenASymbol === "USDT"
+                                      ? 6
+                                      : 18;
+                                const amountA =
+                                  (Number(selectedPool.reserves[0]) *
+                                    percentage) /
+                                  Math.pow(10, tokenADecimals);
+                                return `${amountA.toFixed(6)} ${selectedPool.tokenASymbol}`;
+                              })()}
                             </div>
-                            <div className="text-white">
-                              0.00 {selectedPool.tokenBSymbol}
+                            <div className="text-white font-medium">
+                              {(() => {
+                                if (
+                                  !selectedPool.lpBalanceRaw ||
+                                  selectedPool.lpBalanceRaw === BigInt(0)
+                                ) {
+                                  return `0.00 ${selectedPool.tokenBSymbol}`;
+                                }
+                                const percentage = removePercentage / 100;
+                                const tokenBDecimals =
+                                  selectedPool.isXlmPool &&
+                                  selectedPool.tokenBSymbol === "XLM"
+                                    ? 7
+                                    : selectedPool.tokenBSymbol === "USDT"
+                                      ? 6
+                                      : 18;
+                                const amountB =
+                                  (Number(selectedPool.reserves[1]) *
+                                    percentage) /
+                                  Math.pow(10, tokenBDecimals);
+                                return `${amountB.toFixed(6)} ${selectedPool.tokenBSymbol}`;
+                              })()}
                             </div>
                           </div>
                         </div>
