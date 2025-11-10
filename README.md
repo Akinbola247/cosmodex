@@ -4,7 +4,7 @@ A decentralized token launcher and automated market maker (AMM) built on Stellar
 
 ## 🚀 Built with Scaffold Stellar
 
-CosmoDex is built using [Scaffold Stellar](https://github.com/stellar/scaffold-stellar), a powerful framework for developing Stellar dApps with Soroban smart contracts. Scaffold Stellar provides:
+CosmoDex is built using Scaffold Stellar, a powerful framework for developing Stellar dApps with Soroban smart contracts. Scaffold Stellar provides:
 
 - **Automatic TypeScript Client Generation**: Contract clients are automatically generated from Soroban contracts, eliminating manual binding code
 - **Hot Reload Development**: Contracts are watched and clients are regenerated automatically during development
