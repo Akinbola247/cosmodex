@@ -88,7 +88,7 @@ LP tokens are fungible and can be tracked, transferred, or used to remove liquid
 
 ## 🛠️ Tech Stack
 
-- **Framework**: [Scaffold Stellar](https://github.com/stellar/scaffold-stellar) - Stellar dApp development framework
+- **Framework**: Scaffold Stellar - Stellar dApp development framework
 
 ## 🚀 Getting Started
 
